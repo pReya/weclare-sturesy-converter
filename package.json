@@ -1,0 +1,35 @@
+{
+  "name": "weclare-sturesy-converter",
+  "version": "0.0.1",
+  "description": "Convert StuResy question sets to weclare",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pReya/weclare-sturesy-converter.git"
+  },
+  "author": "Moritz Stückler",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pReya/weclare-sturesy-converter/issues"
+  },
+  "homepage": "https://github.com/pReya/weclare-sturesy-converter#readme",
+  "bin": {
+    "weclare-convert": "./index.js"
+  },
+  "dependencies": {
+    "eslint-config-prettier": "^3.4.0",
+    "eslint-plugin-prettier": "^3.0.1",
+    "meow": "^5.0.0",
+    "nanoid": "^2.0.1",
+    "prettier": "^1.15.3",
+    "xml2js": "^0.4.19"
+  },
+  "devDependencies": {
+    "eslint": "^5.12.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0"
+  }
+}
