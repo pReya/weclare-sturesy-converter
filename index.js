@@ -5,7 +5,7 @@
 const meow = require("meow");
 const fs = require("fs");
 const nanoid = require("nanoid");
-const { parseString } = require("xml2js");
+const xml2js = require("xml2js");
 
 const cli = meow(`
 	Usage
@@ -15,32 +15,53 @@ const cli = meow(`
 	  $ weclare-convert sturesy.xml weclare.json
 `);
 
-const contents = fs.readFileSync(cli.input[0], "utf8");
-
-const newOutputQuestion = (mode, type, questionText, answers) => ({
+const newOutputQuestion = (mode, type, text, answers) => ({
   id: nanoid(6),
-  type: type,
+  type,
   mode,
-  text: questionText,
+  text,
   answers
 });
 
-const newOutputAnswer = answerText => ({
+const newOutputAnswer = (text, isCorrect) => ({
   id: nanoid(6),
-  text: answerText,
+  text,
   isCorrect: false
 });
 
-parseString(contents, (err, result) => {
-  // console.dir(result, { showHidden: false, depth: 4, colors: true });
-  const singleChoiceQuestions = result.questionset.questionmodel;
-  const multipleChoiceQuestions = result.questionset.multiplechoice;
-  // console.dir(base, { showHidden: false, depth: 4, colors: true });
+const log = data => {
+  console.dir(data, { showHidden: false, depth: 6, colors: true });
+};
 
-  const filtered = singleChoiceQuestions.map(question => {
-    const answers = question.answer.map(answer => newOutputAnswer(answer));
-    const type = question.correct[0] === "-1" ? "vote" : "question";
-    return newOutputQuestion("single", type, question.question[0], answers);
-  });
-  console.dir(filtered, { showHidden: false, depth: 4, colors: true });
+const transform = (err, result) => {
+  log(result);
+  //   // console.dir(result, { showHidden: false, depth: 4, colors: true });
+  //   const singleChoiceQuestions = result.questionset.questionmodel;
+  //   const multipleChoiceQuestions = result.questionset.multiplechoice;
+  //   const textQuestions = result.questionset.textquestion;
+  //   // console.dir(base, { showHidden: false, depth: 4, colors: true });
+
+  //   const filtered = singleChoiceQuestions.map(question => {
+  //     const answers = question.answer.map(answer => newOutputAnswer(answer));
+  //     const type = question.correct[0] === "-1" ? "vote" : "question";
+  //     if (type === "question") {
+  //       const { correct } = question;
+  //       correct.forEach(correctAnswerIdx => {
+  //         answers[correctAnswerIdx].isCorrect = true;
+  //       });
+  //     }
+  //     return newOutputQuestion("single", type, question.question[0], answers);
+  //   });
+
+  //   log(filtered);
+};
+
+const parser = new xml2js.Parser({
+  explicitChildren: true,
+  preserveChildrenOrder: true,
+  childkey: "_children"
 });
+
+const contents = fs.readFileSync(cli.input[0], "utf8");
+
+parser.parseString(contents, transform);
