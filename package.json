@@ -25,6 +25,7 @@
     "meow": "^5.0.0",
     "nanoid": "^2.0.1",
     "prettier": "^1.15.3",
+    "striptags": "^3.1.1",
     "xml2js": "^0.4.19"
   },
   "devDependencies": {

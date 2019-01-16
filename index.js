@@ -6,13 +6,14 @@ const meow = require("meow");
 const fs = require("fs");
 const nanoid = require("nanoid");
 const xml2js = require("xml2js");
+const striptags = require("striptags");
 
 const cli = meow(`
-	Usage
-	  $ weclare-convert <input> <output>
+  Usage
+    $ weclare-convert <input> <output>
 
-	Examples
-	  $ weclare-convert sturesy.xml weclare.json
+  Examples
+    $ weclare-convert input.xml output.json
 `);
 
 const newOutputQuestion = (mode, type, text, answers) => ({
@@ -22,44 +23,70 @@ const newOutputQuestion = (mode, type, text, answers) => ({
   text,
   answers
 });
-
-const newOutputAnswer = (text, isCorrect) => ({
+const newOutputAnswer = text => ({
   id: nanoid(6),
   text,
   isCorrect: false
 });
 
-const log = data => {
-  console.dir(data, { showHidden: false, depth: 6, colors: true });
+const logObject = data => {
+  console.dir(data, { showHidden: false, depth: 6, colors: false });
 };
 
 const transform = (err, result) => {
-  log(result);
-  //   // console.dir(result, { showHidden: false, depth: 4, colors: true });
-  //   const singleChoiceQuestions = result.questionset.questionmodel;
-  //   const multipleChoiceQuestions = result.questionset.multiplechoice;
-  //   const textQuestions = result.questionset.textquestion;
-  //   // console.dir(base, { showHidden: false, depth: 4, colors: true });
+  if (result) {
+    // logObject(result);
+    const base = result.questionset._children;
+    console.log(`Found ${base.length} questions in file. Converting...`);
+    const output = base.map(question => {
+      let mode;
+      let answers;
+      let type = "question";
+      const text = question.question[0];
+      switch (question["#name"]) {
+        case "multiplechoice":
+          mode = "multi";
+          answers = question.answers.map(answer => newOutputAnswer(answer));
+          question.correctAnswers.forEach(correctAnswerIdx => {
+            answers[correctAnswerIdx].isCorrect = true;
+          });
+          break;
+        case "questionmodel":
+          mode = "single";
+          answers = question.answer.map(answer => newOutputAnswer(answer));
+          if (question.correct.length === 1 && question.correct[0] === "-1") {
+            type = "vote";
+          } else {
+            question.correct.forEach(correctAnswerIdx => {
+              answers[correctAnswerIdx].isCorrect = true;
+            });
+          }
 
-  //   const filtered = singleChoiceQuestions.map(question => {
-  //     const answers = question.answer.map(answer => newOutputAnswer(answer));
-  //     const type = question.correct[0] === "-1" ? "vote" : "question";
-  //     if (type === "question") {
-  //       const { correct } = question;
-  //       correct.forEach(correctAnswerIdx => {
-  //         answers[correctAnswerIdx].isCorrect = true;
-  //       });
-  //     }
-  //     return newOutputQuestion("single", type, question.question[0], answers);
-  //   });
-
-  //   log(filtered);
+          break;
+        case "textquestion":
+          mode = "text";
+          answers = {};
+          break;
+        default:
+        // do nothing
+      }
+      return newOutputQuestion(mode, type, text, answers);
+    });
+    console.log(`Done`);
+    fs.writeFileSync(cli.input[1], JSON.stringify(output, null, 2));
+    // logObject(output);
+  } else {
+    console.log("Error: ", err);
+  }
 };
 
 const parser = new xml2js.Parser({
   explicitChildren: true,
   preserveChildrenOrder: true,
-  childkey: "_children"
+  childkey: "_children",
+  ignoreAttrs: true,
+  valueProcessors: [value => striptags(value)],
+  trim: true
 });
 
 const contents = fs.readFileSync(cli.input[0], "utf8");
