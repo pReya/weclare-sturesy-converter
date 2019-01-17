@@ -9,6 +9,19 @@ const xml2js = require("xml2js");
 const he = require("he");
 const path = require("path");
 
+const walkAndFindXml = (dir, filelist = []) => {
+  const files = fs.readdirSync(dir);
+  files.forEach(file => {
+    const extension = path.extname(file);
+    if (fs.statSync(path.join(dir, file)).isDirectory()) {
+      filelist = walkAndFindXml(path.join(dir, file), filelist);
+    } else if (extension === ".xml") {
+      filelist.push(path.join(dir, file));
+    }
+  });
+  return filelist;
+};
+
 const newOutputQuestion = (mode, type, text, answers) => ({
   id: nanoid(6),
   type,
@@ -29,7 +42,7 @@ const newOutputAnswer = text => ({
 const transform = result => {
   // logObject(result);
   const base = result.questionset._children;
-  console.log(`Found ${base.length} questions in file. Converting...`);
+  console.log(`Found ${base.length} questions. Converting...`);
   const output = base.map(question => {
     let mode;
     let answers;
@@ -40,8 +53,11 @@ const transform = result => {
         mode = "multi";
         answers = question.answers.map(answer => newOutputAnswer(answer));
         question.correctAnswers.forEach(correctAnswerIdx => {
-          answers[correctAnswerIdx].isCorrect = true;
+          if (answers.length > correctAnswerIdx) {
+            answers[correctAnswerIdx].isCorrect = true;
+          }
         });
+
         break;
       case "questionmodel":
         mode = "single";
@@ -92,34 +108,38 @@ const parser = new xml2js.Parser({
 
 const cli = meow(`
   Usage
-    $ weclare-convert <input> [<output>]
+    $ weclare-convert <input>
 
   Examples
-    $ weclare-convert input.xml output.json
     $ weclare-convert input.xml
+    $ weclare-convert path/to/questions
 `);
 
-if (cli.input.length === 1 || cli.input.length === 2) {
-  const inputFilename = path.parse(cli.input[0]);
-  const outputFilename =
-    cli.input.length === 2 ? path.parse(cli.input[1]) : null;
-  const contents = fs.readFileSync(cli.input[0], "utf8");
-  let output;
-  parser.parseString(contents, (err, result) => {
-    if (result) {
-      console.log(`Reading file ${inputFilename.base}...`);
-      output = transform(result);
-      console.log(
-        `Done converting. Saving to ${
-          outputFilename ? outputFilename.name : inputFilename.name
-        }.json...`
-      );
-      fs.writeFileSync(
-        `${outputFilename ? outputFilename.name : inputFilename.name}.json`,
-        JSON.stringify(output, null, 2)
-      );
-      console.log(`Saving successful`);
-    } else if (err) console.log("Error: ", err);
+const xmlFiles = [];
+if (cli.input.length === 1) {
+  if (fs.statSync(cli.input[0]).isDirectory()) {
+    console.log("Directory detected. Finding all xml files...");
+    walkAndFindXml(cli.input[0], xmlFiles);
+  } else {
+    xmlFiles.push(cli.input[0]);
+  }
+  console.log(xmlFiles);
+  xmlFiles.forEach(xmlFile => {
+    const filename = path.parse(xmlFile);
+    const contents = fs.readFileSync(xmlFile, "utf8");
+    let output;
+    parser.parseString(contents, (err, result) => {
+      if (result) {
+        console.log(`Reading file ${filename.base}...`);
+        output = transform(result);
+        console.log(`Done converting. Saving to ${filename.name}.json...`);
+        fs.writeFileSync(
+          `${filename.name}.json`,
+          JSON.stringify(output, null, 2)
+        );
+        console.log(`Saving successful\n`);
+      } else if (err) console.log("Error: ", err);
+    });
   });
 } else {
   cli.showHelp();

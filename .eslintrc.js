@@ -6,6 +6,7 @@ module.exports = {
   },
   rules: {
     "prettier/prettier": "error",
-    "no-underscore-dangle": "off"
+    "no-underscore-dangle": "off",
+    "no-param-reassign": "off"
   }
 };
