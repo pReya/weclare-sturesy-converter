@@ -8,6 +8,13 @@ Download/clone the repository, then do a `npm install` in the folder to install 
 weclare-convert input.xml output.json
 ```
 
+The output parameter is optional. By default, output files will be created in the current directory and have the same name as the input file.
+
+```
+weclare-convert input.xml
+```
+
 ### Limitations:
 - "Duration" is not supported in Weclare
-- Formatting will get lost in the process
+- Text question specific information (lowercase / uppercase, tolerance) will be lost
+- All formatting information will get lost in the process
