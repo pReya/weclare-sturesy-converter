@@ -26,7 +26,7 @@ const newOutputQuestion = (mode, type, text, answers) => ({
   id: nanoid(6),
   type,
   mode,
-  text,
+  text: `<p>${text}</p>`,
   answers
 });
 const newOutputAnswer = text => ({
