@@ -22,8 +22,9 @@ const walkAndFindXml = (dir, filelist = []) => {
   return filelist;
 };
 
-const newOutputQuestion = (mode, type, text, answers) => ({
+const newOutputQuestion = (mode, type, text, answers, questionIdx) => ({
   id: nanoid(6),
+  questionIdx,
   type,
   mode,
   text: `<p>${text}</p>`,
@@ -43,7 +44,7 @@ const transform = result => {
   // logObject(result);
   const base = result.questionset._children;
   console.log(`Found ${base.length} questions. Converting...`);
-  const output = base.map(question => {
+  const output = base.map((question, i) => {
     let mode;
     let answers;
     let type = "question";
@@ -78,7 +79,7 @@ const transform = result => {
       default:
       // do nothing
     }
-    return newOutputQuestion(mode, type, text, answers);
+    return newOutputQuestion(mode, type, text, answers, i);
   });
   // logObject(output);
   return output;
