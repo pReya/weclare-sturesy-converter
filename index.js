@@ -22,14 +22,20 @@ const walkAndFindXml = (dir, filelist = []) => {
   return filelist;
 };
 
-const newOutputQuestion = (mode, type, text, answers, questionIdx) => ({
-  id: nanoid(6),
-  questionIdx,
-  type,
-  mode,
-  text: `<p>${text}</p>`,
-  answers
-});
+const newOutputQuestion = (mode, type, text, answers, questionIdx) => {
+  if (typeof text === "string" && text.length > 0) {
+    return {
+      id: nanoid(6),
+      questionIdx,
+      type,
+      mode,
+      text: `<p>${text}</p>`,
+      answers
+    };
+  }
+  return null;
+};
+
 const newOutputAnswer = text => ({
   id: nanoid(6),
   text,
@@ -43,44 +49,57 @@ const newOutputAnswer = text => ({
 const transform = result => {
   // logObject(result);
   const base = result.questionset._children;
+  let foundQuestionsCounter = -1;
   console.log(`Found ${base.length} questions. Converting...`);
-  const output = base.map((question, i) => {
-    let mode;
-    let answers;
-    let type = "question";
-    const text = question.question[0];
-    switch (question["#name"]) {
-      case "multiplechoice":
-        mode = "multi";
-        answers = question.answers.map(answer => newOutputAnswer(answer));
-        question.correctAnswers.forEach(correctAnswerIdx => {
-          if (answers.length > correctAnswerIdx) {
-            answers[correctAnswerIdx].isCorrect = true;
-          }
-        });
-
-        break;
-      case "questionmodel":
-        mode = "single";
-        answers = question.answer.map(answer => newOutputAnswer(answer));
-        if (question.correct.length === 1 && question.correct[0] === "-1") {
-          type = "vote";
-        } else {
-          question.correct.forEach(correctAnswerIdx => {
-            answers[correctAnswerIdx].isCorrect = true;
+  const output = base
+    .map(question => {
+      let mode;
+      let answers;
+      let type = "question";
+      const text = question.question[0];
+      switch (question["#name"]) {
+        case "multiplechoice":
+          mode = "multi";
+          answers = question.answers.map(answer => newOutputAnswer(answer));
+          question.correctAnswers.forEach(correctAnswerIdx => {
+            if (answers.length > correctAnswerIdx) {
+              answers[correctAnswerIdx].isCorrect = true;
+            }
           });
-        }
 
-        break;
-      case "textquestion":
-        mode = "text";
-        answers = {};
-        break;
-      default:
-      // do nothing
-    }
-    return newOutputQuestion(mode, type, text, answers, i);
-  });
+          break;
+        case "questionmodel":
+          mode = "single";
+          answers = question.answer.map(answer => newOutputAnswer(answer));
+          if (question.correct.length === 1 && question.correct[0] === "-1") {
+            type = "vote";
+          } else {
+            question.correct.forEach(correctAnswerIdx => {
+              answers[correctAnswerIdx].isCorrect = true;
+            });
+          }
+
+          break;
+        case "textquestion":
+          mode = "text";
+          answers = [];
+          break;
+        default:
+        // do nothing
+      }
+      if (typeof text === "string" && text.length > 0) {
+        foundQuestionsCounter += 1;
+        return newOutputQuestion(
+          mode,
+          type,
+          text,
+          answers,
+          foundQuestionsCounter
+        );
+      }
+      return null;
+    })
+    .filter(e => e);
   // logObject(output);
   return output;
 };
