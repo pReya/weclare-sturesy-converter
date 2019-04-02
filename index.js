@@ -30,7 +30,8 @@ const newOutputQuestion = (mode, type, text, answers, questionIdx) => {
       type,
       mode,
       text: `<p>${text}</p>`,
-      answers
+      answers,
+      code: null
     };
   }
   return null;
